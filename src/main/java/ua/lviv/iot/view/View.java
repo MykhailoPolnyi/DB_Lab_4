@@ -1,7 +1,6 @@
 package ua.lviv.iot.view;
 
 import lombok.Setter;
-import ua.lviv.iot.dal.presistant.SqlConnection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +23,7 @@ public class View {
     }
 
     public void view() {
+        System.out.println("Welcome to snack DB!");
         while (true) {
             String actionString = input.nextLine();
             List<String> actionParams = new ArrayList<>(Arrays.asList(actionString.split(" ")));
@@ -39,7 +39,6 @@ public class View {
             }
 
             if (canExit) {
-                SqlConnection.closeConnection();
                 System.out.println("Good bye!");
                 return;
             }

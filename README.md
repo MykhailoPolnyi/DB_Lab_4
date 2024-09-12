@@ -1,4 +1,4 @@
-# DB_Lab_4
+# DB_Lab_5
 
 
 1. The task have to be  performed on the basis of the designed database model

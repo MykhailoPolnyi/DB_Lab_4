@@ -2,18 +2,22 @@ package ua.lviv.iot.models.entity.snackmachine;
 
 import lombok.Data;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDate;
 
 @Data
+@Entity
 @Table(name = "machine_service")
 public class MachineService {
 
     @Id
     @Column(name = "snack_machine_id")
     private Integer machineId;
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "snack_machine_id")
+    private SnackMachine snackMachine;
 
     @Column(name = "last_load")
     private LocalDate lastLoad;
@@ -30,10 +34,11 @@ public class MachineService {
     @Column(name = "loaded_coins")
     private Integer loadedCoins;
 
+
     @Override
     public String toString() {
         return String.format(
-                "Machine id: %s, last load: %s, cash gathering: %s, gathered: %s c, coins load: %s, loaded: %s c",
+                "Machine id: %2d, last load: %s, cash gathering: %s, gathered: %s c, coins load: %s, loaded: %s c",
                 machineId,
                 (lastLoad != null ? lastLoad.toString() : "-"),
                 (lastCashGathering != null ? lastCashGathering.toString() : "-"),

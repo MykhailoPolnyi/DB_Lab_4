@@ -1,51 +1,38 @@
 package ua.lviv.iot.dal.dao;
 
-import ua.lviv.iot.dal.presistant.SqlConnection;
-import ua.lviv.iot.models.manager.Manager;
-import ua.lviv.iot.models.transformer.Transformer;
+import lombok.Getter;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import ua.lviv.iot.models.util.HibernateUtil;
 
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLIntegrityConstraintViolationException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GeneralDao<Entity, Id> implements AbstractDao<Entity, Id> {
-    private final Manager<Entity, Id> manager;
-    private final Transformer<Entity, Id> transformer;
+public class GeneralDao<Entity, Id extends Serializable> implements AbstractDao<Entity, Id> {
+    protected final SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
+    @Getter
+    private final Class<Entity> entityClass;
 
     public GeneralDao(Class<Entity> entityClass) {
-        this.manager = new Manager<>(entityClass);
-        this.transformer = new Transformer<>(manager);
+        this.entityClass = entityClass;
     }
 
     @Override
     public List<Entity> getAll() {
         List<Entity> resultList = new ArrayList<>();
-        String tableName = manager.getTableName();
-        String statement = String.format("SELECT * FROM %s;", tableName);
 
-        try {
-            Connection connection = SqlConnection.setConnection();
-            try (
-                    PreparedStatement getAllStatement = connection.prepareStatement(statement);
-                    ResultSet resultSet = getAllStatement.executeQuery()
-            ) {
-                while (resultSet.next()) {
-                    resultList.add(transformer.castResultSetToEntity(resultSet));
-                }
-            }
-        } catch (SQLException e) {
-            printErrorMessage(e);
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        try (Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+            resultList = session.createQuery("from " + entityClass.getSimpleName()).getResultList();
+            transaction.commit();
         }
-
+        catch (Exception e) {
+            System.out.println("An error occurred during getting data from table:");
+            e.printStackTrace();
+        }
 
         return resultList;
     }
@@ -54,107 +41,63 @@ public class GeneralDao<Entity, Id> implements AbstractDao<Entity, Id> {
     public Entity getById(Id id) {
         Entity resultEntity = null;
 
-        String tableName = manager.getTableName();
-        String primaryKeyName = manager.getPkName();
-        String statement = String.format("SELECT * FROM %s WHERE %s = ?;", tableName, primaryKeyName);
-
-        try {
-            Connection connection = SqlConnection.setConnection();
-            try (
-                    PreparedStatement getStatement = connection.prepareStatement(statement)
-            ) {
-                getStatement.setString(1, id.toString());
-
-                try (ResultSet resultSet = getStatement.executeQuery()) {
-                    if (resultSet.next()) {
-                        resultEntity = transformer.castResultSetToEntity(resultSet);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            printErrorMessage(e);
-        } catch (Exception e) {
+        try (Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+            resultEntity = session.get(entityClass, id);
+            transaction.commit();
+        }
+        catch (Exception e) {
+            System.out.println("An error occurred during getting a row:");
             e.printStackTrace();
         }
+
         return resultEntity;
     }
 
     @Override
     public boolean create(Entity newItem) {
-        String tableName = manager.getTableName();
-        String columns = String.join(", ", manager.getInputableColumnsNames());
-
-        try {
-            Connection connection = SqlConnection.setConnection();
-            String values = manager.getCreateColumnsString(newItem);
-            String statement = String.format("INSERT INTO %s(%s) VALUES(%s);", tableName, columns, values);
-            try( PreparedStatement preparedStatement = connection.prepareStatement(statement)) {
-                return !(preparedStatement.executeUpdate() == 0);
-            }
-        } catch (SQLIntegrityConstraintViolationException foreignKeyFail) {
-            System.out.println("Wrong dependency provided during object creation");
-            return false;
-        } catch (SQLException e) {
-            printErrorMessage(e);
-            return false;
+        try(Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.save(newItem);
+            transaction.commit();
         } catch (Exception e) {
+            System.out.println("An error occurred during creating a row:");
             e.printStackTrace();
-            return false;
         }
+        return true;
     }
 
     @Override
-    public boolean update(Id id, Entity updItem) {
-        String tableName = manager.getTableName();
-        String primaryKeyName = manager.getPkName();
-
-        try {
-            Connection connection = SqlConnection.setConnection();
-            String updatedColumns = manager.getUpdateColumnsString(updItem);
-            String statement = String.format("UPDATE %s SET %s WHERE %s=?;", tableName, updatedColumns, primaryKeyName);
-            try (
-                    PreparedStatement preparedStatement = connection.prepareStatement(statement)
-                    ) {
-                preparedStatement.setString(1, id.toString());
-
-                return  !(preparedStatement.executeUpdate() == 0);
-            }
-        } catch (SQLException e) {
-            printErrorMessage(e);
-            return false;
+    public boolean update(Entity updItem) {
+        try(Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.update(updItem);
+            transaction.commit();
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            System.out.println("An error occurred during updating a row: " + e.getMessage());
         }
+        return false;
     }
 
     @Override
     public boolean delete(Id id) {
-        String tableName = manager.getTableName();
-        String primaryKeyName = manager.getPkName();
-        String statement = String.format("DELETE FROM %s WHERE %s=?;",
-                tableName, primaryKeyName);
-        try {
-            Connection connection = SqlConnection.setConnection();
-            try (PreparedStatement preparedStatement = connection.prepareStatement(statement)) {
-                preparedStatement.setString(1, id.toString());
-
-                return !(preparedStatement.executeUpdate() == 0);
+        try (Session session = sessionFactory.getCurrentSession()) {
+            Transaction transaction = session.beginTransaction();
+            Entity entityToDelete = session.get(entityClass, id);
+            if (entityToDelete != null) {
+                session.delete(entityToDelete);
             }
-        } catch (SQLException e) {
-            printErrorMessage(e);
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
+            else {
+                transaction.commit();
+                return false;
+            }
+            transaction.commit();
+            return true;
+        }
+        catch (Exception e) {
+            System.out.println("An error occurred during deleting a table: " + e.getMessage());
             return false;
         }
-    }
-
-    private void printErrorMessage(Exception e) {
-        System.out.printf("An exception occurred during query execution: %s%n", e.getMessage());
-    }
-
-    public Manager<Entity, Id> getManager() {
-        return this.manager;
     }
 }

@@ -2,14 +2,11 @@ package ua.lviv.iot.models.entity.snack;
 
 import lombok.Data;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.GenerationType;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 @Data
+@Entity
 @Table(name = "snack")
 public class Snack {
     @Id
@@ -17,30 +14,30 @@ public class Snack {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "trademark")
+    @Column(name = "trademark", nullable = false, length = 45)
     @NotNull
     private String trademark;
 
-    @Column(name = "snack_type")
+    @Column(name = "snack_type", nullable = false, length = 45)
     @NotNull
     private String type;
 
-    @Column(name = "price")
+    @Column(name = "price", nullable = false)
     @NotNull
     private Integer price;
 
-    @Column(name = "snack_producer_id")
-    @NotNull
-    private Integer producerId;
+    @ManyToOne
+    @JoinColumn(name = "snack_producer_id", referencedColumnName = "id", nullable = false)
+    private SnackProducer snackProducer;
 
     @Override
     public String toString() {
-        return String.format("Snack: %s, type: %s, price: %sc, id %s, producer id: %s",
+        return String.format("Id: %2d, Snack: %s, type: %s, price: %sc, producer: %s",
+                id,
                 trademark,
                 type,
                 price,
-                id,
-                producerId
+                snackProducer.getName()
         );
     }
 }

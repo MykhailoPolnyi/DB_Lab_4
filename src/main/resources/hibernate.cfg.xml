@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="connection.url">jdbc:mysql://localhost:3306/polnyi_db</property>
+        <property name="connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+        <property name="connection.username">root</property>
+        <property name="connection.password">root</property>
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</property>
+        <property name="hibernate.show_sql">false</property>
+        <property name="hibernate.current_session_context_class">thread</property>
+
+        <mapping class="ua.lviv.iot.models.entity.address.Country"/>
+        <mapping class="ua.lviv.iot.models.entity.address.City"/>
+        <mapping class="ua.lviv.iot.models.entity.address.FullAddress"/>
+        <mapping class="ua.lviv.iot.models.entity.loader.Loader"/>
+        <mapping class="ua.lviv.iot.models.entity.snack.SnackProducer"/>
+        <mapping class="ua.lviv.iot.models.entity.snack.Snack"/>
+        <mapping class="ua.lviv.iot.models.entity.snackmachine.MachineModel"/>
+        <mapping class="ua.lviv.iot.models.entity.snackmachine.MachineProducer"/>
+        <mapping class="ua.lviv.iot.models.entity.snackmachine.MachineService"/>
+        <mapping class="ua.lviv.iot.models.entity.snackmachine.SnackMachine"/>
+    </session-factory>
+</hibernate-configuration>

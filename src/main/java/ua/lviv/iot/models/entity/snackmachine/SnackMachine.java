@@ -1,15 +1,12 @@
 package ua.lviv.iot.models.entity.snackmachine;
 
 import lombok.Data;
+import ua.lviv.iot.models.entity.address.FullAddress;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.GenerationType;
-import javax.validation.constraints.NotNull;
+import javax.persistence.*;
 
 @Data
+@Entity
 @Table(name = "snack_machine")
 public class SnackMachine {
     @Id
@@ -17,25 +14,30 @@ public class SnackMachine {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "machine_producer_id")
-    @NotNull
-    private Integer producerId;
+    @OneToOne(mappedBy = "snackMachine", cascade = CascadeType.ALL)
+    @PrimaryKeyJoinColumn
+    private MachineService machineService;
 
-    @Column(name = "machine_model")
-    @NotNull
-    private String modelId;
+    @ManyToOne
+    @JoinColumn(name = "full_adress_id", referencedColumnName = "id")
+    private FullAddress fullAddress;
 
-    @Column(name = "full_adress_id")
-    @NotNull
-    private Integer fullAddressId;
+    @ManyToOne
+    @JoinColumn(name = "machine_producer_id", referencedColumnName = "id", nullable = false)
+    private MachineProducer machineProducer;
+
+    @ManyToOne
+    @JoinColumn(name = "machine_model", referencedColumnName = "model", nullable = false)
+    private MachineModel machineModel;
+
 
     @Override
     public String toString() {
-        return String.format("Machine id: %s, model: %s, producer id: %s, address id: %s",
+        return String.format("Machine id: %2d, model: %s, producer: %s, Address: %s",
                 id,
-                modelId,
-                producerId,
-                fullAddressId
+                machineModel.getModel(),
+                machineProducer.getName(),
+                fullAddress.toString()
         );
     }
 }
